@@ -18,7 +18,7 @@ def get_ids(apikey, host, media_type):
 
     return movie_ids
 
-def get_providers(media_id, tmdb_apikey):
+def get_providers(media_id, tmdb_apikey, media_type):
     url = f"https://api.themoviedb.org/3/{media_type}/{media_id}/watch/providers?api_key={tmdb_apikey}"
     providers = requests.get(url=url).json()
     return providers
@@ -56,12 +56,26 @@ def parse_streaming(ids, my_services):
 
 def main():
     db = TinyDB('streaming.json')
+
     radarr_host = os.getenv('RADARR_HOST')
     radarr_apikey = os.getenv('RADARR_APIKEY')
+    sonarr_host = os.getenv('SONARR_HOST')
+    sonarr_apikey = os.getenv('SONARR_APIKEY')
     tmdb_apikey = os.getenv('TMDB_APIKEY')
-    my_services = ['Netflix', 'Disney Plus', 'Hulu', 'Amazon Prime Video']
+    my_services = ['Netflix', 'Disney Plus', 'Hulu', 'Amazon Prime Video'] # [x for x in os.getenv('SERVICES').split(,)
+
+    media_ids = []
 
     movie_ids = get_movie_ids(radarr_apikey=radarr_apikey, host=radarr_host, media_type='movie')
+
+    for x in movie_ids:
+        media_ids.append(i)
+
+    series_ids = get_movie_ids(apikey=sonarr_apikey, host=sonarr_host, media_type='series')
+
+    for x in series_ids:
+        media_ids.append(i)
+
     parsed_ids = parse_media(media_ids)
     parsed_services = parse_streaming(parsed_ids, my_services)
 
