@@ -5,73 +5,89 @@ from tinydb import TinyDB, Query
 
 from dotenv import load_dotenv
 
+class Arr:
 
-if os.path.exists('.env'):
-    load_dotenv('.env')
+    def __init__(self, apikey, host, media_type, remove=False):
+        self.apikey = apikey
+        self.host = host
+        self.media_type = media_type
+        self.remove = remove
+        self.url = f"http://{self.host}/api/v3/{self.media_type}?apikey={self.apikey}"
 
-def get_ids(apikey, host, media_type):
-    url = f"http://{host}/api/v3/{media_type}?apikey={apikey}"
-    ids = requests.get(url=url).json()
-    media_ids = []
-    for i in ids:
-        media_ids.append({'id':i.get('tmdbId'), 'title':i.get('title')}) 
+    def get_ids(self):
+        return get(url=url).json()
 
-    return movie_ids
+    def start_monitor(self):
+        pass
 
-def get_providers(media_id, tmdb_apikey, media_type):
-    url = f"https://api.themoviedb.org/3/{media_type}/{media_id}/watch/providers?api_key={tmdb_apikey}"
-    providers = requests.get(url=url).json()
-    return providers
+    def stop_monitor(self):
+        pass
 
-def parse_media(ids, tmdb_apikey):
-    stream_providers = []
-    for mi in ids:
-        providers = get_providers(mi.get('id'), tmdb_apikey)
-        if providers and 'results' in providers:
-            stream_providers.append({'id':mi.get('id'), 'title':mi.get('title'), 'streams':providers.get('results')})
+    def remove_media(self):
+        if self.remove:
+            pass
+        pass
+
+
+class TMDB:
+
+    def __init__(self, apikey, country):
+        self.apikey = apikey
+        self.country = country
+
+    def get_services(self, media_type, media_id):
+        url = f"https://api.themoviedb.org/3/{media_type}/{media_id}/watch/providers?api_key={self.apikey}"
+        return self._parse_country(get(url=url))
+
+    def _parse_country(self, services):
+        if "results" in services:
+           if self.country in services.get('results').keys(): 
+               return services.get('results').get(self.country)
         else:
-            stream_providers.append({'id':mi.get('id'), 'title':mi.get('title'), 'streams':providers})
-    return stream_providers
+            print("error")
+
+
+
+if os.path.exists(".env"):
+    load_dotenv(".env")
 
 def parse_streaming(ids, my_services):
-    media = []
-    for i in ids:
-        if "US" in i.get("streams").keys():
-            services = []
-            if 'flatrate' in i.get('streams').get('US').keys():
-                for serv in i.get('streams').get('US').get('flatrate'):
-                    if serv.get('provider_name') in my_services:
-                        services.append(serv.get('provider_name'))
-                if services:
-                    i['streaming'] = services
-                    media.append(i)
-                else:
-                    i['streaming'] = ['None']
-                    media.append(i)
-        else:
-            i['streaming'] = ['None']
-            media.append(i)
-    return media
+    services = []
+    if "flatrate" in services.keys():
+        for serv in services.get("flatrate"):
+            if serv.get("provider_name") in my_services:
+                services.append(serv.get("provider_name"))
+    return services
 
 
 def main():
-    db = TinyDB('streaming.json')
+    # TODO: update code to use the classes and maybe turn main into a class
+    db = TinyDB("streaming.json")
 
-    radarr_host = os.getenv('RADARR_HOST')
-    radarr_apikey = os.getenv('RADARR_APIKEY')
-    sonarr_host = os.getenv('SONARR_HOST')
-    sonarr_apikey = os.getenv('SONARR_APIKEY')
-    tmdb_apikey = os.getenv('TMDB_APIKEY')
-    my_services = ['Netflix', 'Disney Plus', 'Hulu', 'Amazon Prime Video'] # [x for x in os.getenv('SERVICES').split(,)
+    radarr_host = os.getenv("RADARR_HOST")
+    radarr_apikey = os.getenv("RADARR_APIKEY")
+    sonarr_host = os.getenv("SONARR_HOST")
+    sonarr_apikey = os.getenv("SONARR_APIKEY")
+    tmdb_apikey = os.getenv("TMDB_APIKEY")
+    my_services = [
+        "Netflix",
+        "Disney Plus",
+        "Hulu",
+        "Amazon Prime Video",
+    ]  # [x for x in os.getenv('SERVICES').split(,)
 
     media_ids = []
 
-    movie_ids = get_movie_ids(radarr_apikey=radarr_apikey, host=radarr_host, media_type='movie')
+    movie_ids = get_movie_ids(
+        radarr_apikey=radarr_apikey, host=radarr_host, media_type="movie"
+    )
 
     for x in movie_ids:
         media_ids.append(i)
 
-    series_ids = get_movie_ids(apikey=sonarr_apikey, host=sonarr_host, media_type='series')
+    series_ids = get_movie_ids(
+        apikey=sonarr_apikey, host=sonarr_host, media_type="series"
+    )
 
     for x in series_ids:
         media_ids.append(i)
@@ -80,9 +96,16 @@ def main():
     parsed_services = parse_streaming(parsed_ids, my_services)
 
     for i in parsed_services:
-        db.insert(i) 
+        db.insert(i)
 
     return
 
-if __name__=="__main__":
+
+def get(url):
+    return requests.get(url=url).json()
+
+def put(url, data):
+    return requests.put(url=url, data=data)
+
+if __name__ == "__main__":
     main()
