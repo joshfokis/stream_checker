@@ -2,8 +2,11 @@ import json
 import os
 import requests
 from tinydb import TinyDB, Query
-
 from dotenv import load_dotenv
+
+# Init Database document
+db = Tinydb('streaming.json')
+
 
 class Arr:
 
@@ -47,64 +50,38 @@ class TMDB:
             print("error")
 
 
-
-if os.path.exists(".env"):
-    load_dotenv(".env")
-
-def parse_streaming(ids, my_services):
-    services = []
-    if "flatrate" in services.keys():
-        for serv in services.get("flatrate"):
-            if serv.get("provider_name") in my_services:
-                services.append(serv.get("provider_name"))
-    return services
-
-
 class StreamMonitor:
 
     def __init__(self):
         self.config = self._get_config()
-        pass
+        self.my_services = self._get_user_services()
 
     def _get_config(self):
         config = {}
+
         if os.path.exists(".env"):
             load_dotenv(".env")
+
         with open('.env') as f:
            for line in f.readlines():
-                a = line.strip('\n').split(' = ')
-                config[a[0]] = a[1]
-
+                a = line.strip().split('=')
+                config[a[0].strip()] = a[1].strip()
         return config
 
-    def create_database(self):
-        pass
-
-    def read_database(self):
-        pass
-
-    def update_database(self):
-        pass
+    def _get_user_services(self):
+        return self.config.get('MY_SERVICES').split(',')
 
 
-
+def parse_streaming(ids, my_services):
+    streaming_on = []
+    if "flatrate" in services.keys():
+        for serv in services.get("flatrate"):
+            if serv.get("provider_name") in my_services:
+                streaming_on.append(serv.get("provider_name"))
+    return streaming_on
 
 def main():
     # TODO: update code to use the classes and maybe turn main into a class
-    db = TinyDB("streaming.json")
-
-    radarr_host = os.getenv("RADARR_HOST")
-    radarr_apikey = os.getenv("RADARR_APIKEY")
-    sonarr_host = os.getenv("SONARR_HOST")
-    sonarr_apikey = os.getenv("SONARR_APIKEY")
-    tmdb_apikey = os.getenv("TMDB_APIKEY")
-    my_services = [
-        "Netflix",
-        "Disney Plus",
-        "Hulu",
-        "Amazon Prime Video",
-    ]  # [x for x in os.getenv('SERVICES').split(,)
-
     media_ids = []
 
     movie_ids = get_movie_ids(
@@ -136,6 +113,10 @@ def get(url):
 def put(url, data):
     return requests.put(url=url, data=data)
 
+def insert(media):
+    Media = Query()
+    return db.upsert(media, Media.tmdbId == media.get('tmdbId'))
+     
 if __name__ == "__main__":
     # main()
     stream = StreamMonitor()
