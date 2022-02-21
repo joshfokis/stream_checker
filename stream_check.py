@@ -5,7 +5,7 @@ from tinydb import TinyDB, Query
 from dotenv import load_dotenv
 
 # Init Database document
-db = Tinydb('streaming.json')
+db = TinyDB('streaming.json')
 
 
 class Arr:
@@ -50,11 +50,11 @@ class TMDB:
             print("error")
 
 
-class StreamMonitor:
+class Config:
 
     def __init__(self):
         self.config = self._get_config()
-        self.my_services = self._get_user_services()
+        self.user_services = self._get_user_services()
 
     def _get_config(self):
         config = {}
@@ -69,7 +69,13 @@ class StreamMonitor:
         return config
 
     def _get_user_services(self):
-        return self.config.get('MY_SERVICES').split(',')
+        return [s.strip() for s in self.config.get('MY_SERVICES').split(',')]
+
+    def apikey(self, service):
+        return self.config.get(f"{service.upper()}_APIKEY")
+
+    def host(self, service):
+        return self.config.get(f"{service.upper()}_HOST")
 
 
 def parse_streaming(ids, my_services):
@@ -81,8 +87,8 @@ def parse_streaming(ids, my_services):
     return streaming_on
 
 def main():
-    # TODO: update code to use the classes and maybe turn main into a class
-    media_ids = []
+    c = Config()
+    sonarr = Arr(c.apikey('sonarr'), c.host('sonarr'), c.apikey('tmdb'))
 
     movie_ids = get_movie_ids(
         radarr_apikey=radarr_apikey, host=radarr_host, media_type="movie"
@@ -119,5 +125,5 @@ def insert(media):
      
 if __name__ == "__main__":
     # main()
-    stream = StreamMonitor()
-    print(stream.config)
+    c = Config()
+    print(c.apikey('radarr'))
