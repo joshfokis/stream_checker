@@ -17,8 +17,8 @@ class Arr:
         self.remove = remove
         self.url = f"http://{self.host}/api/v3/{self.media_type}?apikey={self.apikey}"
 
-    def get_ids(self):
-        return get(url=url).json()
+    def get_media(self):
+        return get(url=self.url).json()
 
     def start_monitor(self):
         pass
@@ -55,6 +55,7 @@ class Config:
     def __init__(self):
         self.config = self._get_config()
         self.user_services = self._get_user_services()
+        self.country = self._get_country()
 
     def _get_config(self):
         config = {}
@@ -71,6 +72,9 @@ class Config:
     def _get_user_services(self):
         return [s.strip() for s in self.config.get('MY_SERVICES').split(',')]
 
+    def _get_country(self):
+        return self.config.get('COUNTRY')
+
     def apikey(self, service):
         return self.config.get(f"{service.upper()}_APIKEY")
 
@@ -78,7 +82,7 @@ class Config:
         return self.config.get(f"{service.upper()}_HOST")
 
 
-def parse_streaming(ids, my_services):
+def parse_streaming(streaming_services, user_services):
     streaming_on = []
     if "flatrate" in services.keys():
         for serv in services.get("flatrate"):
@@ -88,27 +92,25 @@ def parse_streaming(ids, my_services):
 
 def main():
     c = Config()
-    sonarr = Arr(c.apikey('sonarr'), c.host('sonarr'), c.apikey('tmdb'))
+    tmdb = TMDB(c.apikey('tmdb'), c.country)
+    #sonarr = Arr(c.apikey('sonarr'), c.host('sonarr'), 'series')
+    radarr = Arr(c.apikey('radarr'), c.host('radarr'), 'movie') 
 
-    movie_ids = get_movie_ids(
-        radarr_apikey=radarr_apikey, host=radarr_host, media_type="movie"
-    )
+    #for x in sonarr.get_media():
+    #    continue
 
-    for x in movie_ids:
-        media_ids.append(i)
+    for x in radarr.get_media():
+        streaming = parse_streaming(
+            tmdb.get_services('movie', x.get('tmdbId'), c.user_services)
+        )
+        if streaming:
+            x['streaming_on'] = streaming
+            radarr.stop_monitor()
+            radarr.remove_media()
+        insert(x)
 
-    series_ids = get_movie_ids(
-        apikey=sonarr_apikey, host=sonarr_host, media_type="series"
-    )
-
-    for x in series_ids:
-        media_ids.append(i)
-
-    parsed_ids = parse_media(media_ids)
-    parsed_services = parse_streaming(parsed_ids, my_services)
-
-    for i in parsed_services:
-        db.insert(i)
+    #parsed_ids = parse_media(media_ids)
+    #parsed_services = parse_streaming(parsed_ids, my_services)
 
     return
 
@@ -124,6 +126,4 @@ def insert(media):
     return db.upsert(media, Media.tmdbId == media.get('tmdbId'))
      
 if __name__ == "__main__":
-    # main()
-    c = Config()
-    print(c.apikey('radarr'))
+    main()
