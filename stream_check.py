@@ -77,6 +77,16 @@ class StreamMonitor:
 
         return config
 
+    def create_database(self):
+        pass
+
+    def read_database(self):
+        pass
+
+    def update_database(self):
+        pass
+
+
 
 
 def main():
