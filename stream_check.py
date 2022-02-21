@@ -60,6 +60,25 @@ def parse_streaming(ids, my_services):
     return services
 
 
+class StreamMonitor:
+
+    def __init__(self):
+        self.config = self._get_config()
+        pass
+
+    def _get_config(self):
+        config = {}
+        if os.path.exists(".env"):
+            load_dotenv(".env")
+        with open('.env') as f:
+           for line in f.readlines():
+                a = line.strip('\n').split(' = ')
+                config[a[0]] = a[1]
+
+        return config
+
+
+
 def main():
     # TODO: update code to use the classes and maybe turn main into a class
     db = TinyDB("streaming.json")
@@ -108,4 +127,6 @@ def put(url, data):
     return requests.put(url=url, data=data)
 
 if __name__ == "__main__":
-    main()
+    # main()
+    stream = StreamMonitor()
+    print(stream.config)
