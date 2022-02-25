@@ -18,13 +18,21 @@ class Arr:
         self.url = f"http://{self.host}/api/v3/{self.media_type}?apikey={self.apikey}"
 
     def get_media(self):
-        return get(url=self.url).json()
+        return get(url=self.url)
 
-    def start_monitor(self):
-        pass
+    def start_monitor(self, ids):
+        data = {
+          "movieIds": ids,
+          "monitored": true,
+        }
+        return put(url=self.url, data=data)
 
-    def stop_monitor(self):
-        pass
+    def stop_monitor(self, data):
+        data = {
+          "movieIds": ids,
+          "monitored": false,
+        }
+        return put(url=self.url, data=data)
 
     def remove_media(self):
         if self.remove:
@@ -46,8 +54,12 @@ class TMDB:
         if "results" in services:
            if self.country in services.get('results').keys(): 
                return services.get('results').get(self.country)
+           else:
+               return services.get('results')
         else:
             print("error")
+            print(services)
+            return services
 
 
 class Config:
@@ -81,15 +93,17 @@ class Config:
     def host(self, service):
         return self.config.get(f"{service.upper()}_HOST")
 
-
+# Parsing function to see if a flatrate provider is streaming
 def parse_streaming(streaming_services, user_services):
     streaming_on = []
-    if "flatrate" in services.keys():
-        for serv in services.get("flatrate"):
-            if serv.get("provider_name") in my_services:
+    print(type(streaming_services))
+    if "flatrate" in streaming_services.keys():
+        for serv in streaming_services.get("flatrate"):
+            if serv.get("provider_name") in user_services:
                 streaming_on.append(serv.get("provider_name"))
     return streaming_on
 
+# Main function to init config and *arr services
 def main():
     c = Config()
     tmdb = TMDB(c.apikey('tmdb'), c.country)
@@ -99,27 +113,37 @@ def main():
     #for x in sonarr.get_media():
     #    continue
 
+    stop_monitor = []
+    start_monitor = []
     for x in radarr.get_media():
         streaming = parse_streaming(
-            tmdb.get_services('movie', x.get('tmdbId'), c.user_services)
+            tmdb.get_services('movie', x.get('tmdbId')), c.user_services
         )
         if streaming:
+            stop_monitor.append(x.get('id'))
             x['streaming_on'] = streaming
-            radarr.stop_monitor()
-            radarr.remove_media()
+        else:
+            start_monitor.append(x.get('id'))
         insert(x)
-
+    
+    radarr.stop_monitor(ids=stop_monitor)
+    radarr.start_monitor(ids=start_monitor)
     #parsed_ids = parse_media(media_ids)
     #parsed_services = parse_streaming(parsed_ids, my_services)
 
     return
 
 
+### Request functions ###
+
 def get(url):
     return requests.get(url=url).json()
 
 def put(url, data):
     return requests.put(url=url, data=data)
+
+
+### Database functions ###
 
 def insert(media):
     Media = Query()
