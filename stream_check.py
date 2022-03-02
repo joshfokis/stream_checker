@@ -63,15 +63,21 @@ class Arr:
         }
         return put(url=f'{self.url}movie/editor?apikey={self.apikey}', data=data)
 
-    def remove_media(self, ids):
+    def remove_media(self, ids, media_type):
         """Removes media files and folder when config remove is True
 
         Args:
             ids (list): Receives a list of media IDs from the *arr service
         """
         if self.remove:
-            for i in ids:
-               delete(url=f'{self.url}/moviefile/{i}?apikey={self.apikey}') 
+            if media_type == 'movie':
+                for i in ids:
+                   delete(url=f'{self.url}/moviefile/{i}?apikey={self.apikey}') 
+            elif media_type == 'series':
+                for i in ids:
+                    episodes = get(url=f'{self.url}episodeFile?seriesId={i}&apikey={self.apikey}')
+                    for e in episodes.get('id'):
+                        delete(url=f'{self.url}/episodeFile/{e}?apikey={self.apikey}') 
         return
 
 class TMDB:
