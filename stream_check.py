@@ -1,5 +1,5 @@
 import os
-import requests
+from requests import get, put, delete
 from tinydb import TinyDB, Query
 import logging
 
@@ -273,17 +273,6 @@ def main():
     sonarr.remove_media(ids=stop_sonarr)
 
     return
-
-### Request functions ###
-
-def get(url):
-    return requests.get(url=url).json()
-
-def put(url, data):
-    return requests.put(url=url, data=data)
-
-def delete(url):
-    return requests.delete(url=url)
 
 ### Database functions ###
 
