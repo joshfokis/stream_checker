@@ -138,8 +138,8 @@ class Config:
         """
         config = {}
 
-        # read .env in and create a dict based on key = value
-        with open(".env") as f:
+        # read .conf in and create a dict based on key = value
+        with open("config.conf") as f:
             for line in f.readlines():
                 a = line.strip().split("=")
                 config[a[0].strip()] = a[1].strip()
